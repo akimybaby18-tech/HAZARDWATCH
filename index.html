@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazardWatch – Dayap National High School</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rd:#8B0000;--rb:#C0392B;--rm:#E74C3C;--rl:#F1948A;--rp:#FADBD8;
+  --cr:#FFF8F0;--cd:#F5ECD7;--cm:#EDD9C0;
+  --td:#2C0A0A;--tm:#5C2020;
+  --stripe:repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(139,0,0,0.055) 10px,rgba(139,0,0,0.055) 20px);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--td);min-height:100vh;overflow-x:hidden;}
+
+/* ══ SYNC BADGE ══ */
+#syncBadge{
+  position:fixed;top:70px;right:16px;z-index:5000;
+  background:#27AE60;color:white;font-size:.7rem;font-weight:700;
+  padding:.28rem .7rem;border-radius:20px;display:flex;align-items:center;gap:.35rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);transition:background .3s;
+}
+#syncBadge.offline{background:#E74C3C;}
+#syncBadge.syncing{background:#F39C12;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:white;animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ══ AUTH OVERLAY ══ */
+#authOverlay{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,var(--rd) 0%,#3D0000 100%);
+  display:flex;align-items:center;justify-content:center;padding:1rem;
+}
+#authOverlay::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 22px,rgba(255,255,255,0.025) 22px,rgba(255,255,255,0.025) 44px);}
+.auth-card{
+  background:var(--cr);border-radius:18px;width:100%;max-width:430px;
+  overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,0.55);
+  position:relative;z-index:1;animation:authPop .45s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes authPop{from{opacity:0;transform:scale(.82) translateY(24px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.auth-hdr{
+  background:var(--rd);padding:1.75rem 2rem;text-align:center;position:relative;overflow:hidden;
+}
+.auth-hdr::after{content:'⚠';position:absolute;right:-12px;top:-16px;font-size:8rem;opacity:.06;color:#FFD700;pointer-events:none;}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.2rem;}
+.auth-logo svg{width:38px;height:38px;}
+.auth-logo-txt{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--cr);letter-spacing:.04em;}
+.auth-logo-txt span{color:#FFD700;}
+.auth-sub{color:var(--rp);font-size:.78rem;font-style:italic;}
+.auth-school{color:#FFD700;font-size:.82rem;font-weight:600;margin-top:.2rem;letter-spacing:.02em;}
+.auth-tabs{display:flex;border-bottom:2px solid var(--cm);}
+.auth-tab{
+  flex:1;padding:.8rem;text-align:center;font-weight:600;font-size:.83rem;
+  text-transform:uppercase;letter-spacing:.06em;cursor:pointer;
+  color:var(--tm);background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;
+}
+.auth-tab.active{color:var(--rd);border-bottom-color:var(--rm);background:white;}
+.auth-body{padding:1.6rem 1.75rem;background:white;}
+.auth-panel{display:none;} .auth-panel.active{display:block;}
+.auth-field{margin-bottom:.95rem;}
+.auth-field label{display:block;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--rd);margin-bottom:.32rem;}
+.auth-field input,.auth-field select{
+  width:100%;padding:.68rem 1rem;border:2px solid var(--cm);border-radius:7px;
+  font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--td);background:var(--cr);
+  transition:border-color .2s,box-shadow .2s;
+}
+.auth-field input:focus,.auth-field select:focus{outline:none;border-color:var(--rm);box-shadow:0 0 0 3px rgba(231,76,60,.12);}
+.auth-btn{
+  width:100%;padding:.82rem;background:var(--rd);color:var(--cr);
+  font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.08em;
+  border:none;border-radius:7px;cursor:pointer;transition:background .2s,transform .15s;margin-top:.4rem;
+}
+.auth-btn:hover{background:var(--rb);transform:translateY(-1px);}
+.auth-err{
+  display:none;background:var(--rp);color:var(--rd);
+  border-left:4px solid var(--rm);padding:.55rem .8rem;border-radius:5px;
+  font-size:.8rem;font-weight:500;margin-bottom:.9rem;
+}
+.auth-hint{font-size:.74rem;color:#999;text-align:center;margin-top:.9rem;}
+.auth-hint a{color:var(--rm);cursor:pointer;text-decoration:underline;}
+
+/* ══ TAPE ══ */
+.tape{background:repeating-linear-gradient(-55deg,var(--rd) 0,var(--rd) 20px,#111 20px,#111 40px);height:16px;width:100%;}
+
+/* ══ HEADER ══ */
+header{
+  background:var(--rd);padding:0 2rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(139,0,0,.5);
+}
+.logo{display:flex;align-items:center;gap:.7rem;padding:.85rem 0;cursor:pointer;text-decoration:none;}
+.logo svg{width:40px;height:40px;}
+.logo-txt{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;color:var(--cr);letter-spacing:.04em;line-height:1;}
+.logo-txt span{color:#FFD700;}
+.logo-school{font-size:.62rem;color:rgba(255,215,0,.7);text-transform:uppercase;letter-spacing:.06em;line-height:1;margin-top:.1rem;}
+nav{display:flex;gap:.15rem;align-items:center;}
+nav a{
+  font-weight:500;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--cr);text-decoration:none;padding:.4rem .8rem;border-radius:4px;transition:background .2s;cursor:pointer;
+}
+nav a:hover,nav a.active{background:rgba(255,255,255,.15);}
+.user-pill{
+  display:flex;align-items:center;gap:.45rem;
+  background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.35);
+  border-radius:20px;padding:.28rem .85rem .28rem .4rem;cursor:pointer;transition:background .2s;
+}
+.user-pill:hover{background:rgba(255,215,0,.25);}
+.u-avatar{
+  width:26px;height:26px;border-radius:50%;background:#FFD700;color:var(--rd);
+  font-family:'Bebas Neue',sans-serif;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.u-name{color:#FFD700;font-size:.77rem;font-weight:600;}
+.logout-btn{
+  background:none;border:1px solid rgba(255,255,255,.25);color:var(--rp);
+  font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  padding:.28rem .65rem;border-radius:4px;cursor:pointer;transition:all .2s;
+}
+.logout-btn:hover{background:rgba(255,255,255,.1);color:white;}
+
+/* ══ SECTIONS ══ */
+.section{display:none;} .section.active{display:block;}
+.container{max-width:1120px;margin:0 auto;padding:2.5rem 2rem;}
+.sec-hdr{display:flex;align-items:flex-end;gap:1rem;margin-bottom:2rem;padding-bottom:.9rem;border-bottom:3px solid var(--rm);}
+.sec-hdr h2{font-family:'Bebas Neue',sans-serif;font-size:2.3rem;color:var(--rd);line-height:1;}
+.sec-hdr p{color:var(--tm);font-size:.87rem;}
+
+/* ══ HERO ══ */
+.hero{background:linear-gradient(135deg,var(--rd) 0%,#4A0000 100%);padding:4.5rem 2.5rem 3.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:var(--stripe);opacity:.55;}
+.hero::after{content:'⚠';position:absolute;right:4%;top:50%;transform:translateY(-50%);font-size:16rem;opacity:.05;color:#FFD700;pointer-events:none;}
+.hero-inner{position:relative;z-index:1;max-width:700px;}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:rgba(255,215,0,.16);border:1px solid rgba(255,215,0,.38);
+  color:#FFD700;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  padding:.28rem .75rem;border-radius:2px;margin-bottom:1rem;
+}
+.hero-welcome{color:#FFD700;font-size:.95rem;font-weight:600;margin-bottom:.3rem;}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,6.5vw,5rem);color:var(--cr);line-height:1;margin-bottom:.9rem;}
+.hero p{color:var(--rp);font-size:1.05rem;max-width:500px;line-height:1.6;margin-bottom:1.8rem;}
+.hero-btn{
+  display:inline-flex;align-items:center;gap:.5rem;background:#FFD700;color:var(--rd);
+  font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.06em;
+  padding:.8rem 1.8rem;border-radius:4px;transition:transform .2s,box-shadow .2s;cursor:pointer;border:none;
+}
+.hero-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+
+/* ══ STAT BAR ══ */
+.stat-bar{background:var(--cd);border-bottom:2px solid var(--cm);}
+.stat-bar-inner{max-width:1120px;margin:0 auto;padding:1.4rem 2rem;display:flex;gap:2.5rem;flex-wrap:wrap;}
+.stat-item .num{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;color:var(--rd);line-height:1;}
+.stat-item .lbl{font-size:.75rem;color:var(--tm);font-weight:500;}
+
+/* ══ LEVEL CARDS ══ */
+.level-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
+.level-card{background:white;border-radius:10px;border:2px solid var(--cm);padding:1.1rem;}
+.level-card .lvl-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;margin-bottom:.25rem;}
+.level-card .lvl-desc{font-size:.8rem;color:#666;line-height:1.5;}
+
+/* ══ FORM ══ */
+.form-wrap{background:white;border-radius:12px;padding:2rem;border:2px solid var(--cm);box-shadow:0 4px 24px rgba(139,0,0,.06);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;}
+.fg{display:flex;flex-direction:column;gap:.35rem;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--rd);}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:.7rem 1rem;border:2px solid var(--cm);border-radius:6px;
+  background:white;font-family:'DM Sans',sans-serif;font-size:.92rem;color:var(--td);
+  transition:border-color .2s,box-shadow .2s;appearance:none;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--rm);box-shadow:0 0 0 3px rgba(231,76,60,.13);}
+.fg input[readonly]{background:var(--cd);color:var(--tm);cursor:not-allowed;}
+.fg textarea{resize:vertical;min-height:95px;}
+.upload-zone{
+  border:2.5px dashed var(--rl);border-radius:8px;background:var(--cr);
+  padding:2rem;text-align:center;cursor:pointer;transition:background .2s,border-color .2s;
+  position:relative;overflow:hidden;
+}
+.upload-zone:hover,.upload-zone.drag-over{background:var(--rp);border-color:var(--rm);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:2.5rem;display:block;margin-bottom:.4rem;}
+.upload-txt{font-weight:600;color:var(--rm);font-size:.88rem;}
+.upload-hint{font-size:.77rem;color:#aaa;margin-top:.2rem;}
+#img-preview{display:none;margin-top:.9rem;border-radius:8px;overflow:hidden;border:2px solid var(--rl);}
+#img-preview img{width:100%;max-height:200px;object-fit:cover;display:block;}
+
+/* ══ DANGER METER ══ */
+.d-meter{
+  display:none;margin-top:1.2rem;padding:1.3rem;border-radius:8px;
+  border-left:5px solid var(--rm);
+  background:linear-gradient(to right,var(--rp),var(--cr));
+  animation:slideUp .35s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.d-meter h3{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--rd);margin-bottom:.65rem;}
+.d-scale{display:flex;gap:.35rem;margin-bottom:.6rem;}
+.d-blk{
+  flex:1;height:30px;border-radius:4px;background:var(--cm);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:transparent;transition:background .4s;
+}
+.d-blk.on{color:white;}
+.d-blk.l1.on{background:#27AE60;} .d-blk.l2.on{background:#F39C12;}
+.d-blk.l3.on{background:#E67E22;} .d-blk.l4.on{background:#E74C3C;}
+.d-blk.l5.on{background:#8B0000;}
+.d-lbl{font-weight:600;font-size:.87rem;}
+.d-dsc{font-size:.8rem;color:var(--tm);margin-top:.2rem;}
+
+.sub-btn{
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  background:var(--rd);color:var(--cr);font-family:'Bebas Neue',sans-serif;
+  font-size:1.25rem;letter-spacing:.08em;border:none;padding:.95rem;
+  border-radius:6px;cursor:pointer;transition:background .2s,transform .2s,box-shadow .2s;
+  margin-top:.4rem;width:100%;
+}
+.sub-btn:hover{background:var(--rb);transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,0,0,.28);}
+
+/* ══ TOAST ══ */
+.toast{
+  display:none;position:fixed;bottom:2rem;right:2rem;
+  background:#27AE60;color:white;padding:.9rem 1.4rem;border-radius:8px;
+  font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9998;
+  animation:slideUp .4s ease;
+}
+
+/* ══ MAP ══ */
+.map-wrap{display:grid;grid-template-columns:240px 1fr;gap:1.75rem;align-items:start;}
+.map-sidebar{background:white;border-radius:10px;border:2px solid var(--cm);overflow:hidden;}
+.map-sb-hdr{background:var(--rd);color:var(--cr);font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.05em;padding:.7rem 1rem;}
+.bld-list{list-style:none;max-height:520px;overflow-y:auto;}
+.bld-list li{
+  display:flex;align-items:center;gap:.55rem;padding:.6rem .9rem;
+  border-bottom:1px solid var(--cm);cursor:pointer;font-size:.82rem;font-weight:500;transition:background .15s;
+}
+.bld-list li:hover{background:var(--rp);}
+.bld-list li.sel{background:var(--rp);border-left:3px solid var(--rm);}
+.bld-dot{width:9px;height:9px;border-radius:50%;background:var(--rm);flex-shrink:0;}
+.bld-cnt{margin-left:auto;background:var(--rp);color:var(--rd);font-size:.68rem;font-weight:700;padding:.1rem .4rem;border-radius:10px;}
+.map-canvas{position:relative;border-radius:10px;overflow:hidden;border:2px solid var(--cm);box-shadow:0 8px 32px rgba(139,0,0,.1);}
+.map-img-wrap{position:relative;width:100%;background:#f0e8d8;}
+.map-img-wrap img{width:100%;display:block;border-radius:8px;}
+.map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;z-index:10;animation:pinDrop .3s ease;}
+@keyframes pinDrop{from{transform:translate(-50%,-200%);opacity:0;}to{transform:translate(-50%,-100%);opacity:1;}}
+.map-pin svg{width:26px;height:26px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4));}
+.pin-tip{
+  position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+  background:var(--rd);color:white;font-size:.68rem;font-weight:600;
+  white-space:nowrap;padding:.25rem .55rem;border-radius:4px;margin-bottom:3px;display:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.map-pin:hover .pin-tip{display:block;}
+
+/* ══ FILTER BAR ══ */
+.filter-bar{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:1.75rem;align-items:center;}
+.filter-bar .lbl{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--rd);}
+.f-btn{padding:.3rem .8rem;border-radius:20px;border:2px solid var(--cm);background:white;font-size:.77rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--tm);}
+.f-btn:hover,.f-btn.active{background:var(--rd);border-color:var(--rd);color:white;}
+
+/* ══ REPORT CARDS ══ */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.4rem;}
+.r-card{background:white;border-radius:10px;overflow:hidden;border:2px solid var(--cm);transition:box-shadow .2s,transform .2s;}
+.r-card:hover{box-shadow:0 8px 28px rgba(139,0,0,.14);transform:translateY(-3px);}
+.r-card-img{width:100%;height:145px;background:var(--cd);display:flex;align-items:center;justify-content:center;font-size:2.8rem;color:var(--rl);overflow:hidden;}
+.r-card-img img{width:100%;height:145px;object-fit:cover;display:block;}
+.r-card-body{padding:.9rem;}
+.r-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.45rem;gap:.5rem;}
+.r-card-title{font-weight:600;font-size:.88rem;color:var(--td);flex:1;}
+.d-badge{font-family:'Bebas Neue',sans-serif;font-size:.8rem;padding:.12rem .45rem;border-radius:4px;white-space:nowrap;flex-shrink:0;}
+.db1{background:#D5F5E3;color:#1E8449;} .db2{background:#FEF9E7;color:#9A7D0A;}
+.db3{background:#FDEBD0;color:#784212;} .db4{background:#FADBD8;color:#922B21;}
+.db5{background:#F9EBEA;color:#7B241C;border:1px solid #E74C3C;}
+.r-card-meta{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem;}
+.r-tag{font-size:.7rem;background:var(--cd);color:var(--tm);padding:.12rem .45rem;border-radius:3px;font-weight:500;}
+.r-card-desc{font-size:.78rem;color:#777;margin-top:.35rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.del-btn{margin-top:.55rem;padding:.28rem .65rem;background:var(--rp);color:var(--rd);border:1px solid var(--rl);border-radius:5px;font-size:.72rem;font-weight:600;cursor:pointer;transition:background .2s;}
+.del-btn:hover{background:var(--rl);color:white;}
+
+/* ══ COUNSELOR REPLY BUBBLE (on student cards) ══ */
+.gc-reply-box{
+  margin-top:.6rem;background:#D4EDDA;border:2px solid #28A745;
+  border-radius:8px;padding:.6rem .8rem;
+}
+.gc-reply-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:#155724;margin-bottom:.25rem;
+  display:flex;align-items:center;gap:.3rem;}
+.gc-reply-text{font-size:.8rem;color:#155724;line-height:1.5;}
+.gc-reply-time{font-size:.65rem;color:#6c9a77;margin-top:.2rem;}
+.gc-more-replies{font-size:.7rem;color:#666;margin-top:.3rem;font-style:italic;}
+
+/* ══ STATUS BADGE ══ */
+.status-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:600;padding:.15rem .5rem;border-radius:3px;margin-top:.4rem;}
+.st-pending{background:#FEF3CD;color:#856404;}
+.st-reviewed{background:#D1ECF1;color:#0C5460;}
+.st-resolved{background:#D4EDDA;color:#155724;}
+.st-urgent{background:#F8D7DA;color:#721C24;}
+
+/* ══ PROFILE ══ */
+.prof-hdr{
+  background:linear-gradient(135deg,var(--rd) 0%,#4A0000 100%);
+  border-radius:14px;padding:1.75rem 2rem;
+  display:flex;align-items:center;gap:1.75rem;
+  margin-bottom:1.75rem;position:relative;overflow:hidden;
+}
+.prof-hdr::before{content:'';position:absolute;inset:0;background:var(--stripe);opacity:.4;}
+.prof-ava{
+  width:76px;height:76px;border-radius:50%;background:#FFD700;color:var(--rd);
+  font-family:'Bebas Neue',sans-serif;font-size:2rem;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;border:4px solid rgba(255,255,255,.2);position:relative;z-index:1;
+}
+.prof-info{position:relative;z-index:1;}
+.prof-name{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;color:var(--cr);line-height:1;}
+.prof-meta{color:var(--rp);font-size:.8rem;margin-top:.2rem;}
+.prof-stats{display:flex;gap:1.4rem;margin-top:.9rem;flex-wrap:wrap;}
+.ps .n{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;color:#FFD700;line-height:1;}
+.ps .l{font-size:.68rem;color:var(--rp);text-transform:uppercase;letter-spacing:.06em;}
+.breakdown{background:white;border-radius:10px;padding:1.2rem 1.4rem;border:2px solid var(--cm);margin-bottom:1.75rem;}
+.breakdown h3{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--rd);margin-bottom:.7rem;letter-spacing:.03em;}
+.bar-row{display:flex;align-items:center;gap:.7rem;margin-bottom:.5rem;}
+.bar-row .bar-lbl{width:85px;font-size:.75rem;font-weight:600;}
+.bar-track{flex:1;height:16px;background:var(--cd);border-radius:8px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:8px;transition:width .6s ease;}
+.bar-cnt{width:24px;font-size:.75rem;font-weight:700;text-align:right;}
+.empty{text-align:center;padding:3rem;color:#aaa;grid-column:1/-1;}
+.ei{font-size:3rem;display:block;margin-bottom:.9rem;}
+.my-reports-title{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--rd);letter-spacing:.04em;margin-bottom:1rem;}
+footer{background:var(--td);color:var(--rp);text-align:center;padding:1.4rem;font-size:.8rem;}
+footer strong{color:#FFD700;}
+.fade-in{animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:700px){
+  header{padding:0 1rem;}
+  nav a{display:none;}
+  .form-grid{grid-template-columns:1fr;}
+  .fg.full{grid-column:1;}
+  .map-wrap{grid-template-columns:1fr;}
+  .map-sidebar{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SYNC BADGE ══ -->
+<div id="syncBadge"><span class="sync-dot"></span><span id="syncTxt">Connecting…</span></div>
+
+<!-- ════ AUTH OVERLAY ════ -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-hdr">
+      <div class="auth-logo">
+        <svg viewBox="0 0 48 48" fill="none"><polygon points="24,4 44,40 4,40" fill="#FFD700" stroke="#FFF" stroke-width="2"/><text x="24" y="36" text-anchor="middle" font-size="20" font-weight="900" fill="#8B0000" font-family="sans-serif">!</text></svg>
+        <div class="auth-logo-txt">Hazard<span>Watch</span></div>
+      </div>
+      <div class="auth-sub">Campus Safety Reporting System</div>
+      <div class="auth-school">Dayap National High School</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Register</button>
+    </div>
+    <div class="auth-body">
+      <!-- LOGIN -->
+      <div class="auth-panel active" id="panel-login">
+        <div class="auth-err" id="login-err"></div>
+        <div class="auth-field"><label>Username</label><input type="text" id="l-user" placeholder="Your username" autocomplete="username"></div>
+        <div class="auth-field"><label>Password</label><input type="password" id="l-pass" placeholder="Your password" autocomplete="current-password"></div>
+        <button class="auth-btn" onclick="doLogin()">SIGN IN →</button>
+        <div class="auth-hint">No account? <a onclick="switchTab('register')">Register here</a></div>
+      </div>
+      <!-- REGISTER -->
+      <div class="auth-panel" id="panel-register">
+        <div class="auth-err" id="reg-err"></div>
+        <div class="auth-field"><label>Full Name</label><input type="text" id="r-name" placeholder="e.g. Juan dela Cruz"></div>
+        <div class="auth-field">
+          <label>Grade & Section</label>
+          <input type="text" id="r-grade" placeholder="e.g. Grade 10 – Masipag">
+        </div>
+        <div class="auth-field"><label>Username</label><input type="text" id="r-user" placeholder="Choose a username (no spaces)"></div>
+        <div class="auth-field"><label>Password</label><input type="password" id="r-pass" placeholder="At least 6 characters"></div>
+        <button class="auth-btn" onclick="doRegister()">CREATE ACCOUNT →</button>
+        <div class="auth-hint">Already have an account? <a onclick="switchTab('login')">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tape"></div>
+
+<!-- ════ HEADER ════ -->
+<header>
+  <div class="logo" onclick="go('home')">
+    <svg viewBox="0 0 48 48" fill="none"><polygon points="24,4 44,40 4,40" fill="#FFD700" stroke="#FFF" stroke-width="2"/><text x="24" y="36" text-anchor="middle" font-size="20" font-weight="900" fill="#8B0000" font-family="sans-serif">!</text></svg>
+    <div>
+      <div class="logo-txt">Hazard<span>Watch</span></div>
+      <div class="logo-school">Dayap National High School</div>
+    </div>
+  </div>
+  <nav>
+    <a onclick="go('home')" id="nav-home" class="active">Home</a>
+    <a onclick="go('report')" id="nav-report">Report</a>
+    <a onclick="go('map')" id="nav-map">Map</a>
+    <a onclick="go('reports')" id="nav-reports">All Reports</a>
+    <div class="user-pill" id="nav-profile" onclick="go('profile')" title="My Profile">
+      <div class="u-avatar" id="hdr-ava">?</div>
+      <span class="u-name" id="hdr-name">—</span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+  </nav>
+</header>
+
+<!-- ════ HOME ════ -->
+<div class="section active" id="section-home">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">⚠ DNHS Safety Platform</div>
+      <div class="hero-welcome" id="hero-welcome"></div>
+      <h1>Report Campus<br>Hazards Instantly</h1>
+      <p>Spotted something dangerous at Dayap NHS? Help keep everyone safe. Your report could prevent a serious accident.</p>
+      <button class="hero-btn" onclick="go('report')">＋ File a Report</button>
+    </div>
+  </div>
+  <div class="stat-bar">
+    <div class="stat-bar-inner">
+      <div class="stat-item"><div class="num" id="s-total">0</div><div class="lbl">Total Reports</div></div>
+      <div class="stat-item"><div class="num" id="s-crit">0</div><div class="lbl">Critical (L4–5)</div></div>
+      <div class="stat-item"><div class="num" id="s-bldg">0</div><div class="lbl">Buildings Flagged</div></div>
+      <div class="stat-item"><div class="num" id="s-mine">0</div><div class="lbl">Your Reports</div></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="sec-hdr"><div><h2>Hazard Levels</h2><p>How the system classifies danger</p></div></div>
+    <div class="level-grid">
+      <div class="level-card" style="border-left:5px solid #27AE60"><div class="lvl-title" style="color:#27AE60">Level 1 – Low</div><div class="lvl-desc">Minor issues, no immediate harm. Worn markings, loose signs, minor cracks.</div></div>
+      <div class="level-card" style="border-left:5px solid #F39C12"><div class="lvl-title" style="color:#F39C12">Level 2 – Moderate</div><div class="lvl-desc">Minor injury risk. Rusty railings, broken furniture, slippery floors.</div></div>
+      <div class="level-card" style="border-left:5px solid #E67E22"><div class="lvl-title" style="color:#E67E22">Level 3 – Serious</div><div class="lvl-desc">Significant injury risk. Broken stairs, water leaks near electrical, gas odors.</div></div>
+      <div class="level-card" style="border-left:5px solid #E74C3C"><div class="lvl-title" style="color:#E74C3C">Level 4 – High</div><div class="lvl-desc">Immediate danger. Exposed wiring, collapsed ceiling, broken glass.</div></div>
+      <div class="level-card" style="border-left:5px solid #8B0000"><div class="lvl-title" style="color:#8B0000">Level 5 – Critical</div><div class="lvl-desc">Life-threatening emergency. Fire, chemical spills, structural collapse.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ REPORT ════ -->
+<div class="section" id="section-report">
+  <div class="container">
+    <div class="sec-hdr"><div><h2>File a Hazard Report</h2><p>All fields required. Danger level is auto-determined.</p></div></div>
+    <div class="form-wrap">
+      <form id="rForm" onsubmit="submitReport(event)">
+        <div class="form-grid">
+          <div class="fg"><label>Your Name</label><input type="text" id="f-name" readonly></div>
+          <div class="fg"><label>Grade & Section</label><input type="text" id="f-grade" readonly></div>
+          <div class="fg">
+            <label>Building / Area</label>
+            <select id="f-bldg" required>
+              <option value="">— Select Building —</option>
+              <option>DepEd Building 1</option><option>DepEd Building 2</option>
+              <option>TSL Building</option><option>JAICA Building</option>
+              <option>PPP Building</option><option>AUS AID Building</option>
+              <option>DPWH Building 2</option><option>DPWH Building 3</option>
+              <option>JDL Building</option><option>Library (Arago Building)</option>
+              <option>ER Building</option><option>Covered Court / Stage</option>
+              <option>Canteen</option><option>School Clinic</option>
+              <option>DRRM Room</option><option>Guard House / Entrance</option>
+              <option>Comfort Room (CR)</option><option>Old DPWH Building</option>
+            </select>
+          </div>
+          <div class="fg"><label>Specific Location</label><input type="text" id="f-loc" placeholder="e.g. 2nd floor stairwell, Room 3" required></div>
+          <div class="fg full">
+            <label>Type of Hazard</label>
+            <select id="f-htype" required onchange="calcDanger()">
+              <option value="">— Select Hazard Type —</option>
+              <optgroup label="⚠ Level 1 – Low Risk">
+                <option value="1">Worn / faded floor markings</option>
+                <option value="1">Loose signage or notice board</option>
+                <option value="1">Minor surface crack (wall/floor)</option>
+                <option value="1">Pest / insect sighting (minor)</option>
+                <option value="1">Flickering lights (non-urgent)</option>
+              </optgroup>
+              <optgroup label="⚠ Level 2 – Moderate Risk">
+                <option value="2">Rusty railings</option>
+                <option value="2">Broken or unstable furniture</option>
+                <option value="2">Slippery / wet floor (no sign)</option>
+                <option value="2">Damaged door / lock</option>
+                <option value="2">Blocked fire exit</option>
+                <option value="2">Sharp protruding metal or wood</option>
+                <option value="2">Overflowing trash / waste</option>
+              </optgroup>
+              <optgroup label="⚠ Level 3 – Serious Risk">
+                <option value="3">Broken or damaged stairs/steps</option>
+                <option value="3">Water leakage near electrical</option>
+                <option value="3">Structural crack (wall/ceiling)</option>
+                <option value="3">Gas or chemical odor</option>
+                <option value="3">Flooding / standing water</option>
+                <option value="3">Damaged electrical outlet</option>
+              </optgroup>
+              <optgroup label="⚠ Level 4 – High Risk">
+                <option value="4">Exposed electrical wiring</option>
+                <option value="4">Broken glass (large area)</option>
+                <option value="4">Partial ceiling collapse</option>
+                <option value="4">Fire damage / scorch marks</option>
+                <option value="4">Chemical spill (contained)</option>
+              </optgroup>
+              <optgroup label="🚨 Level 5 – CRITICAL">
+                <option value="5">Active fire / smoke</option>
+                <option value="5">Chemical spill (spreading)</option>
+                <option value="5">Structural collapse</option>
+                <option value="5">Confirmed gas leak</option>
+                <option value="5">Medical emergency hazard</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="fg full">
+            <div class="d-meter" id="d-meter">
+              <h3>⚠ DANGER ASSESSMENT</h3>
+              <div class="d-scale">
+                <div class="d-blk l1" id="b1">1</div>
+                <div class="d-blk l2" id="b2">2</div>
+                <div class="d-blk l3" id="b3">3</div>
+                <div class="d-blk l4" id="b4">4</div>
+                <div class="d-blk l5" id="b5">5</div>
+              </div>
+              <div class="d-lbl" id="d-lbl"></div>
+              <div class="d-dsc" id="d-dsc"></div>
+            </div>
+          </div>
+          <div class="fg full"><label>Description</label><textarea id="f-desc" placeholder="Describe the hazard in detail…" required></textarea></div>
+          <div class="fg full">
+            <label>Photo Evidence (optional)</label>
+            <div class="upload-zone" id="dropZone">
+              <input type="file" id="f-img" accept="image/*" onchange="previewImg(event)">
+              <span class="upload-icon">📸</span>
+              <div class="upload-txt">Drop photo here or click to upload</div>
+              <div class="upload-hint">JPG, PNG, WEBP · Max 5 MB</div>
+            </div>
+            <div id="img-preview"><img id="prev-img" src="" alt="preview"></div>
+          </div>
+        </div>
+        <button type="submit" class="sub-btn">🚨 SUBMIT HAZARD REPORT</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MAP ════ -->
+<div class="section" id="section-map">
+  <div class="container">
+    <div class="sec-hdr"><div><h2>Campus Hazard Map</h2><p>Visual overview of reported hazards by location.</p></div></div>
+    <div class="map-wrap">
+      <div class="map-sidebar">
+        <div class="map-sb-hdr">📍 Buildings</div>
+        <ul class="bld-list" id="bld-list">
+          <li class="sel" onclick="filterBld('All',this)"><span class="bld-dot" style="background:#8B0000"></span>All Buildings<span class="bld-cnt" id="bc-All">0</span></li>
+          <li onclick="filterBld('DepEd Building 1',this)"><span class="bld-dot"></span>DepEd Bldg 1<span class="bld-cnt" id="bc-DepEd Building 1">0</span></li>
+          <li onclick="filterBld('DepEd Building 2',this)"><span class="bld-dot"></span>DepEd Bldg 2<span class="bld-cnt" id="bc-DepEd Building 2">0</span></li>
+          <li onclick="filterBld('TSL Building',this)"><span class="bld-dot"></span>TSL Building<span class="bld-cnt" id="bc-TSL Building">0</span></li>
+          <li onclick="filterBld('JAICA Building',this)"><span class="bld-dot"></span>JAICA Building<span class="bld-cnt" id="bc-JAICA Building">0</span></li>
+          <li onclick="filterBld('PPP Building',this)"><span class="bld-dot"></span>PPP Building<span class="bld-cnt" id="bc-PPP Building">0</span></li>
+          <li onclick="filterBld('AUS AID Building',this)"><span class="bld-dot"></span>AUS AID Bldg<span class="bld-cnt" id="bc-AUS AID Building">0</span></li>
+          <li onclick="filterBld('DPWH Building 2',this)"><span class="bld-dot"></span>DPWH Bldg 2<span class="bld-cnt" id="bc-DPWH Building 2">0</span></li>
+          <li onclick="filterBld('DPWH Building 3',this)"><span class="bld-dot"></span>DPWH Bldg 3<span class="bld-cnt" id="bc-DPWH Building 3">0</span></li>
+          <li onclick="filterBld('JDL Building',this)"><span class="bld-dot"></span>JDL Building<span class="bld-cnt" id="bc-JDL Building">0</span></li>
+          <li onclick="filterBld('Library (Arago Building)',this)"><span class="bld-dot"></span>Library (Arago)<span class="bld-cnt" id="bc-Library (Arago Building)">0</span></li>
+          <li onclick="filterBld('ER Building',this)"><span class="bld-dot"></span>ER Building<span class="bld-cnt" id="bc-ER Building">0</span></li>
+          <li onclick="filterBld('Covered Court / Stage',this)"><span class="bld-dot"></span>Covered Court<span class="bld-cnt" id="bc-Covered Court / Stage">0</span></li>
+          <li onclick="filterBld('Canteen',this)"><span class="bld-dot"></span>Canteen<span class="bld-cnt" id="bc-Canteen">0</span></li>
+          <li onclick="filterBld('School Clinic',this)"><span class="bld-dot"></span>School Clinic<span class="bld-cnt" id="bc-School Clinic">0</span></li>
+          <li onclick="filterBld('DRRM Room',this)"><span class="bld-dot"></span>DRRM Room<span class="bld-cnt" id="bc-DRRM Room">0</span></li>
+          <li onclick="filterBld('Guard House / Entrance',this)"><span class="bld-dot"></span>Guard House<span class="bld-cnt" id="bc-Guard House / Entrance">0</span></li>
+          <li onclick="filterBld('Comfort Room (CR)',this)"><span class="bld-dot"></span>Comfort Room<span class="bld-cnt" id="bc-Comfort Room (CR)">0</span></li>
+          <li onclick="filterBld('Old DPWH Building',this)"><span class="bld-dot"></span>Old DPWH Bldg<span class="bld-cnt" id="bc-Old DPWH Building">0</span></li>
+        </ul>
+      </div>
+      <div class="map-canvas">
+        <div class="map-img-wrap">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Gatto_europeo4.jpg/800px-Gatto_europeo4.jpg" alt="DNHS Campus Map" id="campus-map-img"
+            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22500%22><rect width=%22800%22 height=%22500%22 fill=%22%23f0e8d8%22/><text x=%22400%22 y=%22250%22 text-anchor=%22middle%22 font-size=%2224%22 fill=%22%238B0000%22 font-family=%22sans-serif%22>📍 DNHS Campus Map</text><text x=%22400%22 y=%22285%22 text-anchor=%22middle%22 font-size=%2214%22 fill=%22%235C2020%22 font-family=%22sans-serif%22>Replace this with your campus map image</text></svg>'">
+          <div id="map-pins"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ ALL REPORTS ════ -->
+<div class="section" id="section-reports">
+  <div class="container">
+    <div class="sec-hdr"><div><h2>All Hazard Reports</h2><p>Browse all submitted reports from DNHS students.</p></div></div>
+    <div class="filter-bar">
+      <span class="lbl">Filter:</span>
+      <button class="f-btn active" onclick="filterCards('all',this)">All</button>
+      <button class="f-btn" onclick="filterCards('1',this)">Level 1</button>
+      <button class="f-btn" onclick="filterCards('2',this)">Level 2</button>
+      <button class="f-btn" onclick="filterCards('3',this)">Level 3</button>
+      <button class="f-btn" onclick="filterCards('4',this)">Level 4</button>
+      <button class="f-btn" onclick="filterCards('5',this)">Level 5</button>
+    </div>
+    <div class="cards-grid" id="all-grid"></div>
+  </div>
+</div>
+
+<!-- ════ PROFILE ════ -->
+<div class="section" id="section-profile">
+  <div class="container">
+    <div class="sec-hdr"><div><h2>My Profile</h2><p>Your account details and report history.</p></div></div>
+    <div class="prof-hdr">
+      <div class="prof-ava" id="p-ava">?</div>
+      <div class="prof-info">
+        <div class="prof-name" id="p-name">—</div>
+        <div class="prof-meta" id="p-meta">—</div>
+        <div class="prof-stats">
+          <div class="ps"><div class="n" id="p-total">0</div><div class="l">Reports Filed</div></div>
+          <div class="ps"><div class="n" id="p-crit">0</div><div class="l">Level 4–5</div></div>
+          <div class="ps"><div class="n" id="p-bldgs">0</div><div class="l">Buildings</div></div>
+          <div class="ps"><div class="n" id="p-max">—</div><div class="l">Highest Level</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="breakdown">
+      <h3>REPORTS BY DANGER LEVEL</h3>
+      <div id="level-bars"></div>
+    </div>
+    <div class="my-reports-title">MY SUBMITTED REPORTS</div>
+    <div class="cards-grid" id="my-grid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>
+  <div class="tape" style="margin-bottom:1rem;opacity:.35"></div>
+  <strong>HazardWatch</strong> — Dayap National High School, Calauan, Laguna &nbsp;|&nbsp;
+  Always call emergency services for life-threatening situations.
+</footer>
+
+<!-- ════ FIREBASE SDK ════ -->
+<script type="module">
+// ✅ CORRECT CDN imports
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, push, onValue, remove, set, get }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+// ══ FIREBASE CONFIG ══
+const firebaseConfig = {
+  apiKey: "AIzaSyA_w4dKbEE5y93CdxWb_34aNT8in2fVHgk",
+  authDomain: "hazardwatch-dnhs.firebaseapp.com",
+  databaseURL: "https://hazardwatch-dnhs-default-rtdb.firebaseio.com",
+  projectId: "hazardwatch-dnhs",
+  storageBucket: "hazardwatch-dnhs.firebasestorage.app",
+  messagingSenderId: "699420053608",
+  appId: "1:699420053608:web:6cd65a35dd79acf7adebdd"
+};
+
+// ══ SYNC STATUS (defined first so it can be called anytime) ══
+function setSyncStatus(s) {
+  const b = document.getElementById('syncBadge');
+  const t = document.getElementById('syncTxt');
+  if (s === 'online')  { b.style.background='#27AE60'; t.textContent='🟢 Live Sync ✓'; }
+  if (s === 'offline') { b.style.background='#E74C3C'; t.textContent='🔴 Offline'; }
+  if (s === 'syncing') { b.style.background='#F39C12'; t.textContent='🟡 Syncing…'; }
+}
+
+// ══ INIT FIREBASE ══
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+const reportsRef = ref(db, 'hw_reports');
+const usersRef   = ref(db, 'hw_users');
+setSyncStatus('syncing');
+
+let REPORTS = [];
+let USERS   = [];  // loaded from Firebase so login works on any device
+
+// ══ LOAD USERS FROM FIREBASE (cross-device accounts) ══
+onValue(usersRef, snap => {
+  const data = snap.val() || {};
+  USERS = Object.values(data);
+}, () => {});
+
+// ══ REAL-TIME REPORTS LISTENER ══
+onValue(reportsRef, snap => {
+  const data = snap.val() || {};
+  REPORTS = Object.entries(data)
+    .map(([key, val]) => ({ ...val, _key: key }))
+    .sort((a, b) => b.id - a.id);
+  updateAll();
+  setSyncStatus('online');
+}, () => setSyncStatus('offline'));
+
+// ══ DATA HELPERS ══
+function getReports() { return REPORTS; }
+
+function getUsers() {
+  // Merge Firebase users with any locally-created users (backwards compat)
+  const local = JSON.parse(localStorage.getItem('hw_users') || '[]');
+  const allUsers = [...USERS];
+  local.forEach(lu => { if (!allUsers.find(u => u.username === lu.username)) allUsers.push(lu); });
+  return allUsers;
+}
+
+async function saveUserToFirebase(u) {
+  // Save user under their username as key so it's findable cross-device
+  await set(ref(db, 'hw_users/' + u.username), u);
+  // Also keep in localStorage as backup
+  const local = JSON.parse(localStorage.getItem('hw_users') || '[]');
+  if (!local.find(x => x.username === u.username)) { local.push(u); localStorage.setItem('hw_users', JSON.stringify(local)); }
+}
+
+async function saveReport(rep) {
+  setSyncStatus('syncing');
+  await push(reportsRef, rep);
+  setSyncStatus('online');
+}
+
+async function deleteReport(key) {
+  setSyncStatus('syncing');
+  await remove(ref(db, 'hw_reports/' + key));
+  setSyncStatus('online');
+}
+
+let CU = JSON.parse(sessionStorage.getItem('hw_cu') || 'null');
+
+function updateAll() {
+  updateStats();
+  if (document.getElementById('section-reports').classList.contains('active')) renderAll('all');
+  if (document.getElementById('section-map').classList.contains('active'))     { renderPins(); updateBldCounts(); }
+  if (document.getElementById('section-profile').classList.contains('active')) renderProfile();
+}
+
+// ══ AUTH ══
+window.switchTab = function(t) {
+  ['login','register'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('active', x===t);
+    document.getElementById('panel-'+x).classList.toggle('active', x===t);
+  });
+  document.getElementById('login-err').style.display = 'none';
+  document.getElementById('reg-err').style.display   = 'none';
+};
+
+function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+
+window.doRegister = async function() {
+  document.getElementById('reg-err').style.display = 'none';
+  const name  = document.getElementById('r-name').value.trim();
+  const grade = document.getElementById('r-grade').value.trim();
+  const user  = document.getElementById('r-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const pass  = document.getElementById('r-pass').value;
+  if (!name||!grade||!user||!pass) return showErr('reg-err','Please fill in all fields.');
+  if (pass.length < 6) return showErr('reg-err','Password must be at least 6 characters.');
+  if (!/^[a-z0-9_.]+$/.test(user)) return showErr('reg-err','Username: letters, numbers, _ and . only.');
+  // Check if username exists in Firebase
+  const snap = await get(ref(db, 'hw_users/' + user));
+  if (snap.exists()) return showErr('reg-err','Username already taken. Try another.');
+  const newUser = { id:Date.now(), name, grade, username:user, password:pass,
+    joined: new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) };
+  await saveUserToFirebase(newUser);
+  loginUser(newUser);
+};
+
+window.doLogin = async function() {
+  document.getElementById('login-err').style.display = 'none';
+  const user = document.getElementById('l-user').value.trim().toLowerCase();
+  const pass = document.getElementById('l-pass').value;
+  if (!user||!pass) return showErr('login-err','Please enter username and password.');
+  // Check Firebase first
+  const snap = await get(ref(db, 'hw_users/' + user));
+  let found = null;
+  if (snap.exists()) {
+    const u = snap.val();
+    if (u.password === pass) found = u;
+  }
+  // Fallback: check local users
+  if (!found) {
+    found = getUsers().find(u => u.username===user && u.password===pass) || null;
+  }
+  if (!found) return showErr('login-err','Incorrect username or password.');
+  loginUser(found);
+};
+
+function loginUser(u) {
+  CU = u;
+  sessionStorage.setItem('hw_cu', JSON.stringify(u));
+  document.getElementById('authOverlay').style.display = 'none';
+  updateHeader(); prefillForm(); updateStats();
+  document.getElementById('hero-welcome').textContent = 'Welcome back, '+u.name.split(' ')[0]+'! 👋';
+}
+
+window.doLogout = function() {
+  CU = null;
+  sessionStorage.removeItem('hw_cu');
+  document.getElementById('rForm').reset();
+  document.getElementById('d-meter').style.display    = 'none';
+  document.getElementById('img-preview').style.display= 'none';
+  document.getElementById('l-user').value = '';
+  document.getElementById('l-pass').value = '';
+  document.getElementById('login-err').style.display  = 'none';
+  document.getElementById('authOverlay').style.display = 'flex';
+};
+
+function updateHeader() {
+  if (!CU) return;
+  const ini = CU.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('hdr-ava').textContent  = ini;
+  document.getElementById('hdr-name').textContent = CU.name.split(' ')[0];
+}
+
+function prefillForm() {
+  if (!CU) return;
+  document.getElementById('f-name').value  = CU.name;
+  document.getElementById('f-grade').value = CU.grade;
+}
+
+// ══ NAVIGATION ══
+window.go = function(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav a, #nav-profile').forEach(a => a.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  const nav = document.getElementById('nav-'+id);
+  if (nav) nav.classList.add('active');
+  if (id==='reports') renderAll('all');
+  if (id==='map')     { renderPins(); updateBldCounts(); }
+  if (id==='home')    updateStats();
+  if (id==='profile') renderProfile();
+  window.scrollTo(0,0);
+};
+
+// ══ DANGER CALC ══
+const DI = {
+  1:{lbl:'Level 1 – Low Risk',      dsc:'Minor issue. Notify custodial staff when convenient.', col:'#27AE60'},
+  2:{lbl:'Level 2 – Moderate Risk', dsc:'Address soon. Report to class adviser or school staff.',col:'#F39C12'},
+  3:{lbl:'Level 3 – Serious Risk',  dsc:'Needs prompt action. Inform Admin Office today.',       col:'#E67E22'},
+  4:{lbl:'Level 4 – High Risk',     dsc:'Immediate action required. Cordon off area. Notify admin.',col:'#E74C3C'},
+  5:{lbl:'Level 5 – CRITICAL ⚠',   dsc:'EMERGENCY. Evacuate immediately. Call for help NOW.',   col:'#8B0000'},
+};
+window.calcDanger = function() {
+  const v = document.getElementById('f-htype').value;
+  const m = document.getElementById('d-meter');
+  if (!v) { m.style.display='none'; return; }
+  const lv = parseInt(v); m.style.display='block';
+  for (let i=1;i<=5;i++) document.getElementById('b'+i).classList.toggle('on', i<=lv);
+  document.getElementById('d-lbl').textContent = DI[lv].lbl;
+  document.getElementById('d-lbl').style.color = DI[lv].col;
+  document.getElementById('d-dsc').textContent = DI[lv].dsc;
+};
+
+// ══ IMAGE ══
+window.previewImg = function(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=ev=>{ document.getElementById('prev-img').src=ev.target.result; document.getElementById('img-preview').style.display='block'; }; r.readAsDataURL(f);
+};
+
+// ══ SUBMIT ══
+window.submitReport = function(e) {
+  e.preventDefault(); if (!CU) return;
+  const imgInput = document.getElementById('f-img');
+  const file = imgInput.files[0];
+  const save = async (imgData) => {
+    const rep = {
+      id: Date.now(), uid: CU.id, uname: CU.name, ugrade: CU.grade,
+      date: new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}),
+      building: document.getElementById('f-bldg').value,
+      loc:      document.getElementById('f-loc').value,
+      htype:    document.getElementById('f-htype').options[document.getElementById('f-htype').selectedIndex].text,
+      level:    parseInt(document.getElementById('f-htype').value),
+      desc:     document.getElementById('f-desc').value,
+      img:      imgData || null,
+      status:   'Pending',
+    };
+    await saveReport(rep);
+    ['f-bldg','f-htype','f-desc'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('f-loc').value='';
+    document.getElementById('f-img').value='';
+    document.getElementById('d-meter').style.display='none';
+    document.getElementById('img-preview').style.display='none';
+    showToast('✅ Hazard report submitted successfully!');
+    updateStats();
+  };
+  if (file) { const r=new FileReader(); r.onload=ev=>save(ev.target.result); r.readAsDataURL(file); }
+  else save(null);
+};
+
+// ══ CARD HTML ══
+function cardHTML(r, mine) {
+  const stMap = { Pending:'st-pending', Reviewed:'st-reviewed', Resolved:'st-resolved', Urgent:'st-urgent' };
+  const stClass = stMap[r.status] || 'st-pending';
+
+  // Show latest counselor reply if exists
+  const thread = r.thread || [];
+  const gcReplies = thread.filter(m => m.role === 'gc');
+  let replyHTML = '';
+  if (gcReplies.length > 0) {
+    const latest = gcReplies[gcReplies.length - 1];
+    replyHTML = `<div class="gc-reply-box">
+      <div class="gc-reply-label">🛡 Guidance Counselor replied</div>
+      <div class="gc-reply-text">${esc(latest.text)}</div>
+      <div class="gc-reply-time">${latest.time}</div>
+      ${gcReplies.length > 1 ? `<div class="gc-more-replies">+${gcReplies.length-1} more message${gcReplies.length>2?'s':''} in this case</div>` : ''}
+    </div>`;
+  }
+
+  return `<div class="r-card fade-in">
+    <div class="r-card-img">${r.img?`<img src="${r.img}" alt="hazard">`:'⚠️'}</div>
+    <div class="r-card-body">
+      <div class="r-card-top">
+        <div class="r-card-title">${esc(r.htype)}</div>
+        <span class="d-badge db${r.level}">⚠ L${r.level}</span>
+      </div>
+      <div class="r-card-meta">
+        <span class="r-tag">🏫 ${esc(r.building)}</span>
+        <span class="r-tag">📍 ${esc(r.loc)}</span>
+        <span class="r-tag">🗓 ${r.date}</span>
+      </div>
+      <div class="r-card-desc">${esc(r.desc)}</div>
+      <div class="status-badge ${stClass}">● ${r.status||'Pending'}</div>
+      ${replyHTML}
+      ${mine ? `<button class="del-btn" onclick="delReport('${r._key||r.id}')">🗑 Delete</button>`
+             : `<div style="margin-top:.4rem;font-size:.72rem;color:#aaa">By: ${esc(r.uname)} · ${esc(r.ugrade)}</div>`}
+    </div>
+  </div>`;
+}
+
+window.delReport = async function(id) {
+  if (!confirm('Delete this report?')) return;
+  await deleteReport(id);
+  renderProfile(); updateStats();
+  showToast('🗑 Report deleted.');
+};
+
+window.filterCards = function(lvl, btn) {
+  document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderAll(lvl);
+};
+
+function renderAll(lvl) {
+  const reps = getReports();
+  const filtered = lvl==='all' ? reps : reps.filter(r=>r.level==lvl);
+  const g = document.getElementById('all-grid');
+  g.innerHTML = filtered.length
+    ? filtered.map(r=>cardHTML(r,false)).join('')
+    : `<div class="empty"><span class="ei">📋</span><p>No reports ${lvl!=='all'?'at this level':'yet'}.</p></div>`;
+}
+
+// ══ PROFILE ══
+function renderProfile() {
+  if (!CU) return;
+  const reps = getReports();
+  const mine = reps.filter(r => r.uid === CU.id);
+  const ini = CU.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('p-ava').textContent  = ini;
+  document.getElementById('p-name').textContent = CU.name;
+  document.getElementById('p-meta').textContent = CU.grade + '  ·  @' + CU.username + '  ·  Joined ' + CU.joined;
+  document.getElementById('p-total').textContent = mine.length;
+  document.getElementById('p-crit').textContent  = mine.filter(r=>r.level>=4).length;
+  document.getElementById('p-bldgs').textContent = new Set(mine.map(r=>r.building)).size;
+  const maxL = mine.length ? Math.max(...mine.map(r=>r.level)) : null;
+  const mEl = document.getElementById('p-max');
+  mEl.textContent = maxL || '—';
+  if (maxL) mEl.style.color = ['','#27AE60','#F39C12','#E67E22','#E74C3C','#8B0000'][maxL];
+  const lc = ['','#27AE60','#F39C12','#E67E22','#E74C3C','#8B0000'];
+  const ln = ['','Low','Moderate','Serious','High','Critical'];
+  let bars='';
+  for (let i=1;i<=5;i++) {
+    const cnt=mine.filter(r=>r.level===i).length;
+    const pct=mine.length?Math.round(cnt/mine.length*100):0;
+    bars+=`<div class="bar-row"><div class="bar-lbl" style="color:${lc[i]}">L${i} ${ln[i]}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${lc[i]}"></div></div><div class="bar-cnt" style="color:${lc[i]}">${cnt}</div></div>`;
+  }
+  document.getElementById('level-bars').innerHTML = bars;
+  const g = document.getElementById('my-grid');
+  g.innerHTML = mine.length
+    ? mine.map(r=>cardHTML(r,true)).join('')
+    : `<div class="empty"><span class="ei">📋</span><p>You haven't filed any reports yet. <a onclick="go('report')" style="color:var(--rm);cursor:pointer;text-decoration:underline">File your first one!</a></p></div>`;
+}
+
+// ══ MAP ══
+const PIN_POS = {
+  'DepEd Building 1':{x:10,y:72},'DepEd Building 2':{x:31,y:62},'TSL Building':{x:32,y:37},
+  'JAICA Building':{x:35,y:52},'PPP Building':{x:58,y:44},'AUS AID Building':{x:62,y:58},
+  'DPWH Building 2':{x:85,y:48},'DPWH Building 3':{x:8,y:55},'JDL Building':{x:62,y:14},
+  'Library (Arago Building)':{x:32,y:75},'ER Building':{x:40,y:85},'Covered Court / Stage':{x:62,y:28},
+  'Canteen':{x:62,y:20},'School Clinic':{x:60,y:68},'DRRM Room':{x:10,y:83},
+  'Guard House / Entrance':{x:22,y:96},'Comfort Room (CR)':{x:23,y:52},'Old DPWH Building':{x:78,y:60},
+};
+const LV_COL=['','#27AE60','#F39C12','#E67E22','#E74C3C','#8B0000'];
+
+function renderPins(filterBld) {
+  const container=document.getElementById('map-pins'); container.innerHTML='';
+  const reps=getReports();
+  const shown=(filterBld&&filterBld!=='All')?reps.filter(r=>r.building===filterBld):reps;
+  const maxByBld={};
+  shown.forEach(r=>{if(!maxByBld[r.building]||r.level>maxByBld[r.building])maxByBld[r.building]=r.level;});
+  Object.entries(maxByBld).forEach(([bld,lv])=>{
+    const pos=PIN_POS[bld]; if(!pos) return;
+    const cnt=shown.filter(r=>r.building===bld).length;
+    const col=LV_COL[lv];
+    const pin=document.createElement('div'); pin.className='map-pin';
+    pin.style.left=pos.x+'%'; pin.style.top=pos.y+'%';
+    pin.innerHTML=`<div class="pin-tip">${bld}: ${cnt} report${cnt!==1?'s':''} · Max L${lv}</div>
+      <svg viewBox="0 0 24 36"><path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24s12-15 12-24c0-6.627-5.373-12-12-12z" fill="${col}" stroke="white" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" fill="white" font-size="9" font-weight="bold" font-family="sans-serif">${lv}</text></svg>`;
+    container.appendChild(pin);
+  });
+}
+
+window.filterBld = function(name, el) {
+  document.querySelectorAll('.bld-list li').forEach(li=>li.classList.remove('sel'));
+  el.classList.add('sel');
+  renderPins(name!=='All'?name:null);
+};
+
+function updateBldCounts() {
+  const reps=getReports();
+  const el=document.getElementById('bc-All'); if(el) el.textContent=reps.length;
+  Object.keys(PIN_POS).forEach(b=>{
+    const e=document.getElementById('bc-'+b);
+    if(e) e.textContent=reps.filter(r=>r.building===b).length;
+  });
+}
+
+// ══ STATS ══
+function updateStats() {
+  const reps=getReports();
+  document.getElementById('s-total').textContent=reps.length;
+  document.getElementById('s-crit').textContent =reps.filter(r=>r.level>=4).length;
+  document.getElementById('s-bldg').textContent =new Set(reps.map(r=>r.building)).size;
+  document.getElementById('s-mine').textContent =CU?reps.filter(r=>r.uid===CU.id).length:0;
+  updateBldCounts();
+}
+
+// ══ TOAST ══
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',3500);
+}
+
+function esc(s){ return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ══ DRAG & DROP ══
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    document.getElementById('f-img').files=e.dataTransfer.files;
+    const r=new FileReader(); r.onload=ev=>{document.getElementById('prev-img').src=ev.target.result;document.getElementById('img-preview').style.display='block';}; r.readAsDataURL(f);
+  }
+});
+
+// ══ INIT ══
+if (CU) { loginUser(CU); } else { updateStats(); }
+
+</script>
+</body>
+</html>
